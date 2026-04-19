@@ -1,0 +1,11 @@
+/* Ajoute un padding en haut pour éviter que l'UI soit cachée sous la barre de statut iOS */
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.header, header, .topbar {
+  padding-top: env(safe-area-inset-top);
+}
