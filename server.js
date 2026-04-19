@@ -368,6 +368,7 @@ app.use(helmet({
             fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com', 'data:'],
             styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
             scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
+            scriptSrcAttr: ["'unsafe-inline'"],
             connectSrc: ["'self'"],
             frameSrc: ["'self'", 'https://www.youtube.com', 'https://player.vimeo.com', 'https://www.dailymotion.com'],
             upgradeInsecureRequests: [] // only meaningful when served over HTTPS
