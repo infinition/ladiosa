@@ -1,8 +1,16 @@
 ######## Stage 1 — deps ########
-FROM node:20-alpine AS deps
+# Build always on the host arch ($BUILDPLATFORM) — avoids QEMU SIGILL (exit 132)
+# when npm/Node runs under emulated arm64. All runtime deps are pure JS, so
+# node_modules are portable across amd64/arm64.
+FROM --platform=$BUILDPLATFORM node:20-alpine AS deps
 WORKDIR /app
-COPY package.json ./
-RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force
+COPY package.json package-lock.json* ./
+RUN if [ -f package-lock.json ]; then \
+        npm ci --omit=dev --no-audit --no-fund; \
+    else \
+        npm install --omit=dev --no-audit --no-fund; \
+    fi \
+ && npm cache clean --force
 
 ######## Stage 2 — runtime ########
 FROM node:20-alpine AS runtime
