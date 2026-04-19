@@ -70,7 +70,7 @@ jobs:
 
       - name: Trivy scan
         if: github.event_name != 'pull_request'
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ steps.imgname.outputs.name }}:latest
           format: table
