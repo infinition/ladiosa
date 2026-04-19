@@ -1402,7 +1402,14 @@
         const init = { credentials: 'same-origin', ...opts };
         init.headers = { ...authHeaders(!!opts.body && !(opts.body instanceof FormData)), ...(opts.headers || {}) };
         let res = await fetch(url, init);
-        if (res.status === 401 && !opts._retried) {
+        // Only attempt a refresh when we *were* logged in (visible cookie flag)
+        // and the failing request isn't itself an /api/auth/* call. Otherwise
+        // we'd burn rate-limit slots on every anonymous page load.
+        const canRefresh = res.status === 401
+            && !opts._retried
+            && isLoggedIn()
+            && !url.startsWith('/api/auth/');
+        if (canRefresh) {
             try {
                 const r = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'same-origin' });
                 if (r.ok) {
