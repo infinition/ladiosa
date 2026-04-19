@@ -248,6 +248,7 @@
         .main-nav {
             width:100%; background:#FFFFFF; border-bottom:1px solid var(--border-color);
             box-shadow:var(--shadow-sm); position:sticky; top:0; z-index:1001;
+            padding-top: env(safe-area-inset-top);
         }
         .nav-inner {
             max-width:1400px; margin:0 auto; padding:0 20px;
@@ -296,7 +297,7 @@
         .nav-mobile-menu.show { display:flex; }
 
         .site-footer {
-            max-width:1400px; margin:40px auto 0; padding:20px;
+            max-width:1400px; margin:40px auto 0; padding:20px 20px calc(20px + env(safe-area-inset-bottom));
             display:flex; justify-content:center; align-items:center; gap:15px;
             border-top:1px solid var(--border-color); color:var(--muted-text); font-size:.85rem;
         }
