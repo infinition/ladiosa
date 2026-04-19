@@ -36,8 +36,12 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
     ports:
-      # Publie uniquement sur loopback Synology — passez par le reverse proxy DSM pour HTTPS.
-      - "127.0.0.1:1106:1106"
+      # Publie sur toutes les interfaces host (aligné sur les autres services
+      # DSM dont le reverse-proxy pointe vers la gateway du bridge docker,
+      # ex. 172.22.0.1:1106). Utilisez le pare-feu DSM pour restreindre
+      # l'accès LAN direct si nécessaire — le flux internet passe via HTTPS
+      # sur le reverse-proxy.
+      - "1106:1106"
     volumes:
       - /volume1/docker/ladiosa/data:/data
     environment:

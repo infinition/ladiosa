@@ -1515,6 +1515,15 @@
     function navigate(path) { window.location.hash = path; }
 
     function handleRoute() {
+        // If no hash but pathname looks like a known SPA route, promote it
+        // to a hash so the rest of the router works unchanged.
+        if (!window.location.hash) {
+            const p = window.location.pathname;
+            const known = ['/tulum', '/recipes', '/blog', '/contact'];
+            if (known.includes(p) || p.startsWith('/article/') || p.startsWith('/recipe/')) {
+                history.replaceState(null, '', '/#' + p);
+            }
+        }
         const hash = window.location.hash.slice(1) || '/';
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-link[data-page]').forEach(l => l.classList.remove('active'));

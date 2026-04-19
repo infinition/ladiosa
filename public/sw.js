@@ -1,5 +1,5 @@
 /* LA DIOSA — Service Worker (network-first for HTML/API, cache-first for static) */
-const VERSION = 'ladiosa-v1';
+const VERSION = 'ladiosa-v2';
 const STATIC_CACHE = 'ladiosa-static-' + VERSION;
 const RUNTIME_CACHE = 'ladiosa-runtime-' + VERSION;
 
@@ -37,6 +37,13 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
+
+  // Don't intercept cross-origin requests — let the browser handle them
+  // directly (CDNs for fonts, scripts, etc). Intercepting would route the
+  // fetch through the SW under the page's CSP connect-src.
+  if (url.origin !== location.origin) {
+    return;
+  }
 
   // Never cache API / auth / admin
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/rss') || url.pathname.startsWith('/share')) {
