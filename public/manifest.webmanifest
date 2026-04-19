@@ -1,0 +1,24 @@
+{
+  "name": "LA DIOSA",
+  "short_name": "La Diosa",
+  "description": "Recettes authentiques, articles culinaires et inspirations du monde.",
+  "lang": "fr-FR",
+  "dir": "ltr",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#0d1f22",
+  "theme_color": "#0d1f22",
+  "categories": ["food", "lifestyle"],
+  "icons": [
+    { "src": "/assets/icons/LaDiosa_arch.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icons/LaDiosa.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icons/LaDiosa_unicolor.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Recettes", "short_name": "Recettes", "url": "/#/recipes", "icons": [{ "src": "/assets/icons/lemon.png", "sizes": "192x192" }] },
+    { "name": "Blog", "short_name": "Blog", "url": "/#/blog" }
+  ]
+}

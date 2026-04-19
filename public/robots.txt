@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /tulum
+Disallow: /#/tulum
+Disallow: /share/
+
+Sitemap: https://ladiosa.fr/sitemap.xml

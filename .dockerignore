@@ -1,0 +1,27 @@
+# Git & CI
+.git
+.github
+.gitignore
+
+# Node
+node_modules
+npm-debug.log*
+
+# Données (NE JAMAIS embarquer dans l'image — volume externe)
+recipes/
+data/
+
+# Env / secrets
+.env
+.env.*
+keys
+*.pem
+*.key
+
+# Docs locales
+*.md
+!SECURITY.md
+
+# OS
+.DS_Store
+Thumbs.db

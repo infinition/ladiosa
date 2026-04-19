@@ -4,7 +4,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-package-lock.json*
+# package-lock.json intentionnellement commité (builds Docker reproductibles)
 
 # TypeScript / TSX
 dist/
@@ -28,6 +28,15 @@ jspm_packages/
 
 # Optional npm cache directory
 .npm
+
+# Recipe data (persisted on volume, not in repo — contient config.json avec hash et JWT secret !)
+recipes/
+data/
+
+# Secrets
+*.pem
+*.key
+secrets/
 
 # Output of 'npm pack'
 *.tgz

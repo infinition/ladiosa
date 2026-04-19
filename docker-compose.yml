@@ -1,0 +1,62 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# LA DIOSA — docker-compose.yml (Synology NAS)
+#
+# Déploiement attendu sur le Synology :
+#   /volume1/docker/ladiosa/
+#     ├── docker-compose.yml      ← ce fichier
+#     ├── .env                    ← vos variables (ADMIN_PASSWORD, etc.)
+#     └── data/                   ← bind-mount (persistance)
+#          ├── recipes.json
+#          ├── articles.json
+#          ├── comments.json
+#          ├── config.json        ← hash mot de passe + JWT secret (NE PAS COMMIT)
+#          └── medias/            ← images et vidéos uploadées
+#
+# Étapes Synology :
+#   1. Créer /volume1/docker/ladiosa/data (chmod 700)
+#   2. Créer le .env (voir .env.example), puis chmod 600
+#   3. docker compose pull && docker compose up -d
+#   4. Exposer via le reverse-proxy DSM (HTTPS + Let's Encrypt) vers le port 1106
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  ladiosa:
+    # Image publique buildée par GitHub Actions (ghcr.io)
+    image: ghcr.io/${GHCR_OWNER:-infinition}/ladiosa:latest
+    # Option alternative : build local (dé-commenter si vous ne voulez pas ghcr)
+    # build: .
+    container_name: ladiosa
+    restart: unless-stopped
+    user: "1001:1001"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    ports:
+      # Publie uniquement sur loopback Synology — passez par le reverse proxy DSM pour HTTPS.
+      - "127.0.0.1:1106:1106"
+    volumes:
+      - /volume1/docker/ladiosa/data:/data
+    environment:
+      NODE_ENV: production
+      PORT: "1106"
+      DATA_DIR: /data
+      TRUST_PROXY: "loopback, linklocal, uniquelocal"
+      PUBLIC_ORIGIN: "${PUBLIC_ORIGIN:-https://ladiosa.fr}"
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-https://ladiosa.fr}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
+      SETUP_TOKEN: "${SETUP_TOKEN:-}"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:1106/healthz"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3

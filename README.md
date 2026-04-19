@@ -1,67 +1,66 @@
-# Cyber Chef
+# LA DIOSA — squelette du site
 
-Cyber chef is a cyberpunk-themed recipe management application. This application features a glassmorphism UI, advanced media management, and local persistence for all your recipes.
+Code source du site **[ladiosa.fr](https://ladiosa.fr)** : blog culinaire et catalogue de recettes personnel.
 
-Demo :
-https://infinition.github.io/cyberchef/
+> Ce dépôt n'est **pas un produit générique** : il contient uniquement la structure technique (serveur + front) du site. Aucune recette, aucun article, aucun média, aucun secret n'est versionné ici — tout le contenu vit sur le serveur de production.
 
-<img width="906" height="507" alt="image" src="https://github.com/user-attachments/assets/d13abe21-856d-4a10-861b-09359b12c82b" />
+## Stack
 
+- **Backend** : Node.js 20 + Express — API REST, RSS, sitemap, OG-share, modération de commentaires.
+- **Frontend** : une page `index.html` vanilla JS (SPA hash-based), rendu Markdown sécurisé via DOMPurify, PWA installable.
+- **Persistance** : fichiers JSON + dossier `medias/` sur un volume bind-mount (pas de base de données).
+- **Déploiement** : image Docker publiée sur `ghcr.io`, tournée sur un Synology derrière le reverse-proxy DSM (HTTPS Let's Encrypt).
 
-## Features
+## Arborescence (à la racine)
 
-*   **Cyberpunk Aesthetics:** Immersive interface with neon accents, glassmorphism effects, and custom typography.
-*   **Recipe Management:** Create, edit, and organize your recipes with ease.
-*   **Rich Text Editor:** detailed instructions with support for Markdown, headings, and lists.
-*   **Advanced Media Handling:**
-    *   Upload and manage images and videos for each recipe.
-    *   Drag-and-drop media directly into recipe instructions.
-    *   Interactive gallery view.
-*   **Smart Search & Filtering:** Quickly find recipes by title, tags, or ingredients.
-*   **Dynamic Servings:** Automatically adjust ingredient quantities based on the desired number of servings.
-*   **Local Persistence:** All data is stored locally on your machine, ensuring you own your data.
-*   **Import/Export:** Support for backing up and sharing your recipe database.
-*   **Dynamic Web import:** Automatically import recipes from a given URL (API Available).
+```
+├─ server.js            serveur Express durci
+├─ index.html           SPA (front complet, chargé tel quel)
+├─ assets/icons/        logos et favicons
+├─ public/              fichiers statiques servis (manifest, sw.js, robots, well-known, offline)
+├─ Dockerfile           image non-root + tini + healthcheck
+├─ docker-compose.yml   profil Synology
+└─ .github/workflows/   build & push ghcr.io
+```
 
+## Mise en ligne (Synology)
 
-## Tech Stack
+1. Créer l'arborescence :
+   ```
+   /volume1/docker/ladiosa/
+     ├─ docker-compose.yml     ← copier depuis ce dépôt
+     ├─ .env                   ← copier .env.example puis remplir
+     └─ data/                  ← vide au premier démarrage
+   ```
+2. Configurer `.env` (voir `.env.example`) — au minimum :
+   - `PUBLIC_ORIGIN=https://ladiosa.fr`
+   - `ALLOWED_ORIGINS=https://ladiosa.fr`
+   - `ADMIN_PASSWORD=<mot de passe fort 12+ caractères>` (peut être retiré après le premier lancement)
+3. `chmod 700 data && chmod 600 .env`
+4. Depuis `/volume1/docker/ladiosa/` :
+   ```bash
+   docker compose pull
+   docker compose up -d
+   docker compose logs -f
+   ```
+5. Dans DSM → **Portail applicatif / Reverse Proxy** : mapper `https://ladiosa.fr` (443) vers `127.0.0.1:1106`. Activer HSTS + HTTP/2 + Let's Encrypt.
 
-*   **Frontend:** HTML5, Vanilla CSS3, Vanilla JavaScript.
-*   **Backend:** Node.js, Express.
-*   **Libraries:**
-    *   [Marked](https://marked.js.org/) (Markdown parsing)
-    *   [Font Awesome](https://fontawesome.com/) (Icons)
-    *   [JSZip](https://stuk.github.io/jszip/) & [Pako](https://nodeca.github.io/pako/) (Compression/Export)
-    *   [Multer](https://github.com/expressjs/multer) (File uploads)
+Le site est accessible sur `https://ladiosa.fr`. L'admin se trouve sur `https://ladiosa.fr/#/tulum`.
 
-## Installation
+## Mise à jour
 
-1.  **Clone the repository** (or download the source code).
-2.  **Install dependencies**:
-    ```bash
-    npm install
-    ```
+```bash
+cd /volume1/docker/ladiosa
+docker compose pull
+docker compose up -d
+```
 
-## Usage
+Chaque `git push` sur `main` déclenche le build + push de l'image `ghcr.io/<owner>/ladiosa:latest` via GitHub Actions.
 
-1.  **Start the local server**:
-    ```bash
-    npm start
-    ```
-    The server will start on port 3000.
+## Sécurité
 
-2.  **Access the application**:
-    Open your web browser and navigate to:
-    [http://localhost:3000](http://localhost:3000)
+Voir [SECURITY.md](SECURITY.md) pour le modèle de menace, les mitigations et le contact pour signaler une faille.
 
-## Project Structure
+## Licence
 
-*   `server.js`: The Express server handling API requests and file operations.
-*   `index.html`: The main entry point for the frontend application.
-*   `recipes/`: Directory where `recipes.json` and media files are stored.
-    *   `recipes.json`: The database file containing all recipe data.
-    *   `medias/`: Folder containing uploaded images and videos.
-
-## License
-
-This project is for personal use.
+Code source personnel — tous droits réservés (contenu du site inclus).

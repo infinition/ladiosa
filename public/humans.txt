@@ -1,0 +1,9 @@
+/* TEAM */
+  Chef & Auteure : LA DIOSA
+  Site : https://ladiosa.fr
+
+/* SITE */
+  Last update : 2026
+  Language : Français
+  Standards : HTML5, CSS3, ES2020
+  Stack : Node.js, Express, Vanilla JS
