@@ -9,3 +9,15 @@ body {
 .header, header, .topbar {
   padding-top: env(safe-area-inset-top);
 }
+
+/* Pour les modales principales (recette, édition, article) :
+   Ajoute un padding en haut pour éviter la barre iOS */
+.modal-wrapper {
+  padding-top: env(safe-area-inset-top);
+  box-sizing: border-box;
+}
+
+/* Optionnel : si la modale elle-même est en fixed/absolute, appliquer aussi sur .recipe-modal */
+.recipe-modal {
+  margin-top: env(safe-area-inset-top);
+}
