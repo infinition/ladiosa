@@ -236,6 +236,15 @@
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:var(--bg-color); color:var(--text-color); font-family:var(--ui-font); line-height:1.6; overflow-x:hidden; display:flex; flex-direction:column; min-height:100vh; }
+        body {
+            padding-top: env(safe-area-inset-top);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .header, header, .topbar {
+            padding-top: env(safe-area-inset-top);
+        }
         .page.active { flex:1; }
         ::-webkit-scrollbar { width:8px; height:8px; }
         ::-webkit-scrollbar-track { background:var(--bg-color); }
@@ -244,7 +253,7 @@
         a { color:var(--teal); text-decoration:none; }
         a:hover { text-decoration:underline; }
 
-        /* â”€â”€ NAVIGATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* Navigation */
         .main-nav {
             width:100%; background:#FFFFFF; border-bottom:1px solid var(--border-color);
             box-shadow:var(--shadow-sm); position:sticky; top:0; z-index:1001;
@@ -304,7 +313,7 @@
         .site-footer a { color:var(--sienna); }
         .nav-mobile-menu .nav-link { padding:12px 14px; width:100%; text-align:left; }
 
-        /* â”€â”€ SHARED COMPONENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* Shared components */
         .cyber-btn {
             background:#fff; border:1px solid var(--border-color); color:var(--text-color);
             padding:6px 12px; font-family:var(--ui-font); font-size:.85rem; font-weight:500;
@@ -347,7 +356,7 @@
         }
         .hidden { display:none !important; }
 
-        /* â”€â”€ HOME PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* Home page */
         .home-container { max-width:1400px; margin:0 auto; padding:30px 20px; }
         .home-hero {
             position:relative; text-align:center; padding:60px 20px; background:linear-gradient(135deg,var(--teal-light) 0%,#fff 100%);
@@ -386,7 +395,7 @@
         }
         .rss-link:hover { background:var(--sienna); color:#fff; text-decoration:none; }
 
-        /* â”€â”€ RECIPE GRID PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* Recipe grid page */
         .recipes-container { max-width:1400px; margin:0 auto; padding:20px; }
         .recipes-toolbar {
             background:#fff; border:1px solid var(--border-color); border-radius:8px;
@@ -461,11 +470,13 @@
         .share-btn.pinterest { background:#E60023; }
         .share-btn.copy { background:var(--teal); }
 
-        /* â”€â”€ RECIPE MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* Recipe modal */
         .modal-wrapper {
             position:fixed; top:0; left:0; width:100%; height:100%; z-index:2000;
             display:none; justify-content:center; align-items:center; opacity:0; transition:opacity .3s;
             background:rgba(0,0,0,.4);
+            padding-top: env(safe-area-inset-top);
+            box-sizing: border-box;
         }
         .modal-wrapper.active { display:flex; opacity:1; }
         .recipe-modal {
@@ -473,6 +484,7 @@
             border:1px solid var(--border-color); box-shadow:var(--shadow-lg);
             display:flex; flex-direction:column; overflow:hidden; border-radius:12px;
             transform:scale(.9); transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+            margin-top: env(safe-area-inset-top);
         }
         .modal-wrapper.active .recipe-modal { transform:scale(1); }
         .modal-header {
@@ -512,7 +524,7 @@
         .video-embed { position:relative; padding-bottom:56.25%; height:0; margin-bottom:15px; border-radius:12px; overflow:hidden; }
         .video-embed iframe { position:absolute; top:0; left:0; width:100%; height:100%; border:none; }
 
-        /* â”€â”€ BLOG PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* Blog page */
         .blog-container { max-width:1400px; margin:0 auto; padding:30px 20px; }
         .blog-toolbar { background:#fff; border:1px solid var(--border-color); border-radius:8px; padding:10px 20px; margin-bottom:20px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; align-items:center; box-shadow:var(--shadow-sm); }
         .blog-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; }
@@ -552,7 +564,7 @@
         .linked-recipes { margin-top:30px; padding-top:20px; border-top:2px solid var(--saffron); }
         .linked-recipes h3 { font-family:var(--cyber-font); color:var(--forest); margin-bottom:15px; }
 
-        /* â”€â”€ COMMENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* Comments */
         .comments-section { margin-top:40px; padding-top:20px; border-top:2px solid var(--border-color); }
         .comments-section h3 { font-family:var(--cyber-font); color:var(--forest); margin-bottom:15px; }
         .comment-item { background:var(--bg-color); border:1px solid var(--border-color); border-radius:8px; padding:15px; margin-bottom:10px; }
@@ -564,7 +576,7 @@
         .comment-form label { display:block; font-size:.85rem; font-weight:600; color:var(--forest); margin-bottom:4px; }
         .comment-form textarea { min-height:100px; resize:vertical; }
 
-        /* â”€â”€ CONTACT PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* Contact page */
         .contact-container { max-width:800px; margin:0 auto; padding:50px 20px; text-align:center; }
         .contact-container h1 { font-family:var(--cyber-font); color:var(--forest); font-size:2.5rem; margin-bottom:15px; }
         .contact-container .tagline { color:var(--muted-text); font-size:1.1rem; margin-bottom:40px; }
@@ -577,7 +589,7 @@
         .contact-social-link:hover { box-shadow:var(--shadow-md); border-color:var(--teal); transform:translateY(-2px); text-decoration:none; }
         .contact-social-link i { font-size:1.5rem; }
 
-        /* â”€â”€ ADMIN PANEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* Admin panel */
         .admin-container { max-width:1400px; margin:0 auto; padding:20px; }
         .admin-tabs { display:flex; gap:5px; margin-bottom:20px; border-bottom:2px solid var(--border-color); padding-bottom:0; overflow-x:auto; -webkit-overflow-scrolling:touch; white-space:nowrap; scrollbar-width:none; }
         .admin-tabs::-webkit-scrollbar { display:none; }
@@ -623,7 +635,7 @@
         .login-container label { display:block; font-size:.85rem; font-weight:600; color:var(--forest); margin-bottom:4px; }
         .login-error { color:var(--neon-red); font-size:.85rem; margin-top:10px; display:none; }
 
-        /* â”€â”€ EDIT FORM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* Edit form */
         .edit-form-container { padding:20px; display:flex; flex-direction:column; gap:15px; }
         .form-group { display:flex; flex-direction:column; gap:5px; }
         .form-label { color:var(--neon-blue); font-size:.8rem; font-family:var(--ui-font); font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
@@ -690,7 +702,7 @@
         }
         .mobile-tab-btn.active { background:var(--teal); color:#fff; border-color:var(--teal); font-weight:600; }
 
-        /* â”€â”€ LIGHTBOX â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* Lightbox */
         #lightboxOverlay {
             display:none; position:fixed; top:0; left:0; width:100%; height:100%;
             background:rgba(0,0,0,.95); z-index:10000; justify-content:center; align-items:center; flex-direction:column;
@@ -707,7 +719,7 @@
             position:fixed; bottom:30px; right:30px; width:50px; height:50px; background:#fff;
             color:var(--neon-blue); border:1px solid var(--border-color); border-radius:50%;
             display:none; align-items:center; justify-content:center; cursor:pointer; z-index:9000;
-            transition:all .2s; box-shadow:var(--shadow-md); font-size:1.2rem;
+            transition:all .2
         }
         #scrollTopBtn:hover { background:var(--teal-light); border-color:var(--neon-blue); transform:translateY(-3px); }
 
@@ -715,7 +727,7 @@
         body.modal-open .main-nav, body.modal-open .page { filter:blur(8px); pointer-events:none; }
         body.modal-open { overflow:hidden; }
 
-        /* â”€â”€ RESPONSIVE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* Responsive */
         @media (max-width:900px) {
             .nav-links { display:none; }
             .nav-hamburger { display:block; }
