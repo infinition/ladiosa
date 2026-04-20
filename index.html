@@ -71,12 +71,35 @@
           if (typeof DOMPurify !== 'undefined') {
             return DOMPurify.sanitize(raw, {
               FORBID_TAGS: ['script','style','iframe','object','embed','form','input','button'],
-              FORBID_ATTR: ['onerror','onload','onclick','onmouseover','onfocus','formaction','style'],
+              FORBID_ATTR: ['onerror','onload','onclick','onmouseover','onfocus','formaction'],
               ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|\/|#|\.\/)/i
             });
           }
           return raw;
         } catch (e) { return ''; }
+      };
+      window.sanitizeRichHtml = function (src) {
+        try {
+          if (typeof DOMPurify === 'undefined') return String(src || '');
+          return DOMPurify.sanitize(String(src || ''), {
+            FORBID_TAGS: ['script','style','iframe','object','embed','form','input','button'],
+            FORBID_ATTR: ['onerror','onload','onclick','onmouseover','onfocus','formaction'],
+            ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|\/|#|\.\/|data:image\/)/i
+          });
+        } catch (e) {
+          return String(src || '');
+        }
+      };
+      window.renderRichText = function (src, fallbackText) {
+        var value = String(src || '').trim();
+        if (!value) return fallbackText || '';
+        try {
+          var looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(value);
+          if (looksLikeHtml) return window.sanitizeRichHtml(value);
+          return window.renderMarkdown(value);
+        } catch (e) {
+          return fallbackText || '';
+        }
       };
     </script>
 
@@ -676,16 +699,69 @@
             display:flex; gap:5px; margin-bottom:10px; padding-bottom:10px;
             border-bottom:1px dashed var(--border-color); flex-wrap:wrap;
         }
+        .editor-toolbar-group { display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
         .toolbar-btn {
             background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-color);
             padding:4px 8px; border-radius:4px; cursor:pointer; font-family:var(--code-font); font-size:.8rem;
         }
         .toolbar-btn:hover { border-color:var(--neon-blue); color:var(--neon-blue); background:var(--teal-light); }
+        .editor-toolbar-select,
+        .toolbar-color {
+            background:#fff;
+            border:1px solid var(--border-color);
+            color:var(--text-color);
+            border-radius:6px;
+            min-height:32px;
+            padding:4px 8px;
+            font-family:var(--ui-font);
+            font-size:.85rem;
+        }
+        .editor-toolbar-select {
+            min-width:132px;
+        }
+        .toolbar-color {
+            width:42px;
+            padding:4px;
+            cursor:pointer;
+        }
+        .toolbar-dropdown {
+            position:relative;
+            display:inline-flex;
+        }
+        .emoji-menu {
+            position:absolute;
+            top:calc(100% + 6px);
+            right:0;
+            display:none;
+            grid-template-columns:repeat(6, minmax(0, 1fr));
+            gap:6px;
+            width:220px;
+            padding:10px;
+            background:#fff;
+            border:1px solid var(--border-color);
+            border-radius:10px;
+            box-shadow:var(--shadow-lg);
+            z-index:30;
+        }
+        .emoji-menu.show { display:grid; }
+        .emoji-btn {
+            border:none;
+            background:var(--bg-color);
+            border-radius:8px;
+            cursor:pointer;
+            min-height:32px;
+            font-size:1.05rem;
+        }
+        .emoji-btn:hover {
+            background:var(--teal-light);
+        }
+        .editor-block { display:flex; flex-direction:column; min-height:0; }
         .rich-editor {
             min-height:400px; max-height:600px; overflow-y:auto; background:#fff;
             border:1px solid var(--border-color); color:var(--text-color); padding:15px;
             font-family:var(--ui-font); border-radius:6px; white-space:pre-wrap;
         }
+        .rich-editor.compact { min-height:140px; max-height:220px; }
         .rich-editor:focus { border-color:var(--neon-blue); outline:none; box-shadow:0 0 0 3px var(--teal-light); }
         .rich-editor h1 { font-size:1.8em; color:var(--forest); border-bottom:2px solid var(--saffron); }
         .rich-editor h2 { font-size:1.5em; color:var(--teal); }
@@ -1287,6 +1363,16 @@
                     <button type="button" class="cyber-btn danger" onclick="removeHeroImage()"><i class="fas fa-trash"></i> Retirer</button>
                 </div>
                 <div class="admin-card">
+                    <h3 style="margin-bottom:15px;">Polices custom</h3>
+                    <p style="margin-bottom:10px;color:var(--muted-text);font-size:.9rem;">
+                        Une police par ligne au format: <code>Nom affiché | URL CSS | famille CSS</code>
+                    </p>
+                    <p style="margin-bottom:12px;color:var(--muted-text);font-size:.85rem;">
+                        Exemple: <code>Amatic SC | https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&display=swap | 'Amatic SC', cursive</code>
+                    </p>
+                    <textarea id="cfgCustomFonts" class="cyber-input" rows="5" placeholder="Nom affiché | URL CSS | famille CSS"></textarea>
+                </div>
+                <div class="admin-card">
                     <h3 style="margin-bottom:15px;">Message de contact</h3>
                     <div class="form-group"><textarea id="cfgContactMsg" class="cyber-input" rows="3"></textarea></div>
                 </div>
@@ -1350,9 +1436,35 @@
                                 <div class="form-group"><label class="form-label">PORTIONS</label><input type="number" id="editServings" class="cyber-input" value="4"></div>
                                 <div class="form-group"><label class="form-label">STATUT</label><select id="editStatus" class="cyber-input"><option value="draft">Brouillon</option><option value="published">Publié</option></select></div>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group editor-block">
                                 <label class="form-label">DESCRIPTION</label>
-                                <textarea id="editDescription" class="cyber-input" rows="4" style="resize:vertical;" placeholder="Petit texte d'introduction, notes, contexte de la recette..."></textarea>
+                                <div class="editor-toolbar">
+                                    <div class="editor-toolbar-group">
+                                        <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('bold', null, 'editDescription')"><i class="fas fa-bold"></i></button>
+                                        <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('italic', null, 'editDescription')"><i class="fas fa-italic"></i></button>
+                                        <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorBlock('h1', 'editDescription')">H1</button>
+                                        <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorBlock('h2', 'editDescription')">H2</button>
+                                        <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorBlock('h3', 'editDescription')">H3</button>
+                                        <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('insertUnorderedList', null, 'editDescription')"><i class="fas fa-list-ul"></i></button>
+                                        <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('insertOrderedList', null, 'editDescription')"><i class="fas fa-list-ol"></i></button>
+                                    </div>
+                                    <div class="editor-toolbar-group">
+                                        <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('justifyLeft', null, 'editDescription')"><i class="fas fa-align-left"></i></button>
+                                        <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('justifyCenter', null, 'editDescription')"><i class="fas fa-align-center"></i></button>
+                                        <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('justifyRight', null, 'editDescription')"><i class="fas fa-align-right"></i></button>
+                                        <select class="editor-toolbar-select editor-font-select" data-editor="editDescription" onchange="applyEditorFont(this.value, 'editDescription'); this.selectedIndex = 0;">
+                                            <option value="">Police</option>
+                                        </select>
+                                        <input type="color" class="toolbar-color" value="#264653" oninput="applyEditorColor(this.value, 'editDescription')" title="Couleur du texte">
+                                        <div class="toolbar-dropdown">
+                                            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="toggleEmojiMenu(event, 'editDescription')"><i class="fas fa-smile"></i></button>
+                                            <div class="emoji-menu" id="emojiMenu_editDescription"></div>
+                                        </div>
+                                        <input type="file" id="descriptionMediaInput" style="display:none" accept="image/*,video/*" onchange="handleStepMediaInput(this,'editDescription')">
+                                        <button type="button" class="cyber-btn" style="padding:2px 8px;font-size:.7rem;" onmousedown="event.preventDefault()" onclick="document.getElementById('descriptionMediaInput').click()"><i class="fas fa-paperclip"></i> Média</button>
+                                    </div>
+                                </div>
+                                <div id="editDescription" class="rich-editor compact" contenteditable="true" onfocus="handleEditorFocus('editDescription')" onblur="handleEditorBlur('editDescription')" ondragover="handleMediaDragOver(event)" ondrop="handleMediaDrop(event,'editDescription')"></div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">TAGS</label>
@@ -1378,14 +1490,28 @@
                         </div>
                         <div class="edit-workspace" id="editTabSteps">
                             <div class="editor-toolbar">
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="insertMarkdown('**','**')"><i class="fas fa-bold"></i></button>
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="insertMarkdown('*','*')"><i class="fas fa-italic"></i></button>
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="insertMarkdown('# ','')">H1</button>
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="insertMarkdown('## ','')">H2</button>
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="insertMarkdown('### ','')">H3</button>
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="insertMarkdown('- ','')"><i class="fas fa-list-ul"></i></button>
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="insertMarkdown('1. ','')"><i class="fas fa-list-ol"></i></button>
-                                <div style="width:1px;background:var(--border-color);margin:0 5px;"></div>
+                                <div class="editor-toolbar-group">
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('bold', null, 'editSteps')"><i class="fas fa-bold"></i></button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('italic', null, 'editSteps')"><i class="fas fa-italic"></i></button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorBlock('h1', 'editSteps')">H1</button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorBlock('h2', 'editSteps')">H2</button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorBlock('h3', 'editSteps')">H3</button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('insertUnorderedList', null, 'editSteps')"><i class="fas fa-list-ul"></i></button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('insertOrderedList', null, 'editSteps')"><i class="fas fa-list-ol"></i></button>
+                                </div>
+                                <div class="editor-toolbar-group">
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('justifyLeft', null, 'editSteps')"><i class="fas fa-align-left"></i></button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('justifyCenter', null, 'editSteps')"><i class="fas fa-align-center"></i></button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('justifyRight', null, 'editSteps')"><i class="fas fa-align-right"></i></button>
+                                    <select class="editor-toolbar-select editor-font-select" data-editor="editSteps" onchange="applyEditorFont(this.value, 'editSteps'); this.selectedIndex = 0;">
+                                        <option value="">Police</option>
+                                    </select>
+                                    <input type="color" class="toolbar-color" value="#264653" oninput="applyEditorColor(this.value, 'editSteps')" title="Couleur du texte">
+                                    <div class="toolbar-dropdown">
+                                        <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="toggleEmojiMenu(event, 'editSteps')"><i class="fas fa-smile"></i></button>
+                                        <div class="emoji-menu" id="emojiMenu_editSteps"></div>
+                                    </div>
+                                </div>
                                 <input type="file" id="stepMediaInput" style="display:none" accept="image/*,video/*" onchange="handleStepMediaInput(this,'editSteps')">
                                 <button type="button" class="cyber-btn" style="padding:2px 8px;font-size:.7rem;" onmousedown="event.preventDefault()" onclick="document.getElementById('stepMediaInput').click()"><i class="fas fa-paperclip"></i> Média</button>
                             </div>
@@ -1455,14 +1581,28 @@
                         </div>
                         <div class="edit-workspace" id="articleTabContent">
                             <div class="editor-toolbar">
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="insertMarkdown('**','**','articleEditContent')"><i class="fas fa-bold"></i></button>
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="insertMarkdown('*','*','articleEditContent')"><i class="fas fa-italic"></i></button>
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="insertMarkdown('# ','','articleEditContent')">H1</button>
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="insertMarkdown('## ','','articleEditContent')">H2</button>
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="insertMarkdown('### ','','articleEditContent')">H3</button>
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="insertMarkdown('- ','','articleEditContent')"><i class="fas fa-list-ul"></i></button>
-                                <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="insertMarkdown('1. ','','articleEditContent')"><i class="fas fa-list-ol"></i></button>
-                                <div style="width:1px;background:var(--border-color);margin:0 5px;"></div>
+                                <div class="editor-toolbar-group">
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('bold', null, 'articleEditContent')"><i class="fas fa-bold"></i></button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('italic', null, 'articleEditContent')"><i class="fas fa-italic"></i></button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorBlock('h1', 'articleEditContent')">H1</button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorBlock('h2', 'articleEditContent')">H2</button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorBlock('h3', 'articleEditContent')">H3</button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('insertUnorderedList', null, 'articleEditContent')"><i class="fas fa-list-ul"></i></button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('insertOrderedList', null, 'articleEditContent')"><i class="fas fa-list-ol"></i></button>
+                                </div>
+                                <div class="editor-toolbar-group">
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('justifyLeft', null, 'articleEditContent')"><i class="fas fa-align-left"></i></button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('justifyCenter', null, 'articleEditContent')"><i class="fas fa-align-center"></i></button>
+                                    <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="applyEditorCommand('justifyRight', null, 'articleEditContent')"><i class="fas fa-align-right"></i></button>
+                                    <select class="editor-toolbar-select editor-font-select" data-editor="articleEditContent" onchange="applyEditorFont(this.value, 'articleEditContent'); this.selectedIndex = 0;">
+                                        <option value="">Police</option>
+                                    </select>
+                                    <input type="color" class="toolbar-color" value="#264653" oninput="applyEditorColor(this.value, 'articleEditContent')" title="Couleur du texte">
+                                    <div class="toolbar-dropdown">
+                                        <button type="button" class="toolbar-btn" onmousedown="event.preventDefault()" onclick="toggleEmojiMenu(event, 'articleEditContent')"><i class="fas fa-smile"></i></button>
+                                        <div class="emoji-menu" id="emojiMenu_articleEditContent"></div>
+                                    </div>
+                                </div>
                                 <input type="file" id="articleStepMediaInput" style="display:none" accept="image/*,video/*" onchange="handleStepMediaInput(this,'articleEditContent')">
                                 <button type="button" class="cyber-btn" style="padding:2px 8px;font-size:.7rem;" onmousedown="event.preventDefault()" onclick="document.getElementById('articleStepMediaInput').click()"><i class="fas fa-paperclip"></i> Média</button>
                             </div>
@@ -1740,6 +1880,9 @@
         } catch (e) { console.warn('Data load error:', e); }
         if (!Array.isArray(recipes)) recipes = [];
         if (!Array.isArray(articles)) articles = [];
+        if (!siteConfig?.typography) siteConfig.typography = {};
+        if (!Array.isArray(siteConfig.typography.customFonts)) siteConfig.typography.customFonts = [];
+        applyCustomFontsFromConfig();
     }
 
     async function saveRecipeData() {
@@ -2033,9 +2176,9 @@
             return `<li class="ingredient-item"><span>${escapeHtml(ing.name)}</span><span class="ing-qty">${dq} ${escapeHtml(ing.unit || '')}</span></li>`;
         }).join('');
         const descriptionHtml = (r.description || '').trim()
-            ? (window.renderMarkdown ? window.renderMarkdown(r.description) : `<p>${escapeHtml(r.description).replace(/\n/g, '<br>')}</p>`)
+            ? (window.renderRichText ? window.renderRichText(r.description, '') : `<p>${escapeHtml(r.description).replace(/\n/g, '<br>')}</p>`)
             : '';
-        const stepsHtml = window.renderMarkdown ? window.renderMarkdown(r.steps || '*Pas d\'instructions.*') : '';
+        const stepsHtml = window.renderRichText ? window.renderRichText(r.steps || '', '<p><em>Pas d\'instructions.</em></p>') : '';
         let videosHtml = '';
         if (r.videos?.length > 0) {
             videosHtml = '<div class="recipe-videos"><h3>Vidéos</h3>' + r.videos.map(url => {
@@ -2095,11 +2238,25 @@
     function updateServings(delta) { const nm = currentMultiplier + (delta / currentActiveRecipe.servings); if (nm > 0.1) { currentMultiplier = nm; renderModalContent(); } }
     function closeModal(e) { if (e.target.id === 'recipeModalWrapper') closeModalDirect(); }
     function closeModalDirect() { document.getElementById('recipeModalWrapper').classList.remove('active'); document.body.classList.remove('modal-open'); currentActiveRecipe = null; }
-    function shareRecipe() {
+    async function shareRecipe() {
         if (!currentActiveRecipe) return;
         const url = window.location.origin + '/share/recipe/' + currentActiveRecipe.id;
-        if (navigator.share) navigator.share({ title: currentActiveRecipe.title, url });
-        else { navigator.clipboard.writeText(url); showToast('Lien copié !'); }
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: currentActiveRecipe.title, text: currentActiveRecipe.title, url });
+                return;
+            }
+        } catch (err) {
+            if (err?.name === 'AbortError') return;
+        }
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(url);
+                showToast('Lien copié !');
+                return;
+            }
+        } catch {}
+        prompt('Copiez ce lien :', url);
     }
     function printRecipe() { window.print(); }
 
@@ -2110,7 +2267,8 @@
 
     function openEditModal(recipe = null) {
         if (!isLoggedIn()) { navigate('/tulum'); return; }
-        const editor = document.getElementById('editSteps'); editor.classList.remove('preview-mode');
+        const editor = document.getElementById('editSteps');
+        const descEditor = document.getElementById('editDescription');
         if (recipe) {
             document.getElementById('editId').value = recipe.id;
             document.getElementById('editTitle').value = recipe.title;
@@ -2118,13 +2276,14 @@
             document.getElementById('editCook').value = recipe.cookTime || '';
             document.getElementById('editServings').value = recipe.servings || 4;
             document.getElementById('editStatus').value = recipe.status === 'draft' ? 'draft' : 'published';
-            document.getElementById('editDescription').value = recipe.description || '';
+            editorRaw.editDescription = recipe.description || '';
+            descEditor.innerHTML = storageToEditorHtml(editorRaw.editDescription);
             document.getElementById('editTags').value = (recipe.tags || []).join(', ');
             document.getElementById('editIngredients').value = (recipe.ingredients || []).map(i => i.raw).join('\n');
             document.getElementById('editVideos').value = (recipe.videos || []).join('\n');
             currentRawMarkdown = recipe.steps || '';
             editorRaw.editSteps = currentRawMarkdown;
-            editor.innerHTML = markdownToEditorHtml(currentRawMarkdown);
+            editor.innerHTML = storageToEditorHtml(currentRawMarkdown);
             initialEditSteps = recipe.steps || ''; initialEditTitle = recipe.title || '';
             const imgList = document.getElementById('editImagesList'); imgList.innerHTML = '';
             if (recipe.images) recipe.images.forEach(src => addImageToEditList(src));
@@ -2132,7 +2291,7 @@
             document.getElementById('recipeForm').reset(); document.getElementById('editId').value = '';
             document.getElementById('editImagesList').innerHTML = ''; document.getElementById('editVideos').value = '';
             document.getElementById('editStatus').value = 'draft';
-            document.getElementById('editDescription').value = '';
+            descEditor.innerHTML = ''; editorRaw.editDescription = '';
             editor.innerHTML = ''; initialEditSteps = ''; initialEditTitle = ''; currentRawMarkdown = ''; editorRaw.editSteps = '';
         }
         document.getElementById('editModalWrapper').classList.add('active'); document.body.classList.add('modal-open');
@@ -2164,12 +2323,12 @@
         e.preventDefault();
         const id = document.getElementById('editId').value || crypto.randomUUID();
         const title = document.getElementById('editTitle').value;
-        const description = document.getElementById('editDescription').value.trim();
+        const description = editorHtmlToStorage(document.getElementById('editDescription').innerHTML);
         const tags = document.getElementById('editTags').value.split(',').map(t => t.trim()).filter(t => t);
         const ingredients = document.getElementById('editIngredients').value.split('\n').filter(l => l.trim()).map(parseIngredient);
         const videos = document.getElementById('editVideos').value.split('\n').map(v => v.trim()).filter(v => v);
         const editor = document.getElementById('editSteps');
-        let steps = editor.classList.contains('preview-mode') ? currentRawMarkdown : editorHtmlToMarkdown(editor.innerHTML);
+        let steps = editorHtmlToStorage(editor.innerHTML);
         let images = Array.from(document.querySelectorAll('#editImagesList img')).map(img => img.getAttribute('src'));
 
         if (initialEditTitle && initialEditTitle !== title) {
@@ -2376,7 +2535,7 @@
         if (!article) { container.innerHTML = '<p style="text-align:center;padding:60px;">Article non trouvé.</p>'; return; }
 
         const date = article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
-        const content = window.renderMarkdown ? window.renderMarkdown(article.content || '') : '';
+        const content = window.renderRichText ? window.renderRichText(article.content || '', '') : '';
         let videosHtml = '';
         if (article.videos?.length > 0) { videosHtml = article.videos.map(url => { const embed = getVideoEmbedUrl(url); return embed ? `<div class="video-embed"><iframe src="${escapeHtml(embed)}" allowfullscreen loading="lazy"></iframe></div>` : ''; }).join(''); }
 
@@ -2675,10 +2834,9 @@
         document.getElementById('articleRecipeSearchInput').value = '';
         // Rich editor content
         const editor = document.getElementById('articleEditContent');
-        editor.classList.remove('preview-mode');
         const rawContent = article ? (article.content || '') : '';
         editorRaw.articleEditContent = rawContent;
-        editor.innerHTML = markdownToEditorHtml(rawContent);
+        editor.innerHTML = storageToEditorHtml(rawContent);
         // Images gallery
         const imgList = document.getElementById('articleEditImagesList'); imgList.innerHTML = '';
         if (article?.images) article.images.forEach(src => addArticleImageToList(src));
@@ -2729,21 +2887,6 @@
         const input = document.getElementById('articleEditRecipes');
         let ids = input.value.split(',').map(s => s.trim()).filter(s => s);
         if (ids.includes(id)) ids = ids.filter(x => x !== id); else ids.push(id);
-            // Met à jour le bouton publier/dépublier
-            const btn = document.getElementById('publishRecipeBtn');
-            const icon = document.getElementById('publishRecipeIcon');
-            const label = document.getElementById('publishRecipeLabel');
-            if (btn && icon && label) {
-                if (recipe.status === 'published') {
-                    btn.classList.remove('action');
-                    icon.className = 'fas fa-eye-slash';
-                    label.textContent = 'DÉPUBLIER';
-                } else {
-                    btn.classList.add('action');
-                    icon.className = 'fas fa-globe';
-                    label.textContent = 'PUBLIER';
-                }
-            }
         input.value = ids.join(','); renderRecipeSuggestions();
     }
     // Permet de publier/dépublier directement depuis la modale d'édition
@@ -2785,7 +2928,7 @@
     async function saveArticle() {
         const id = document.getElementById('articleEditId').value;
         const editor = document.getElementById('articleEditContent');
-        let content = editor.classList.contains('preview-mode') ? editorRaw.articleEditContent : editorHtmlToMarkdown(editor.innerHTML);
+        let content = editorHtmlToStorage(editor.innerHTML);
         const data = {
             title: document.getElementById('articleEditTitle').value,
             tags: document.getElementById('articleEditTags').value.split(',').map(t => t.trim()).filter(t => t),
@@ -2847,6 +2990,7 @@
         updateHeroPreview(siteConfig.site.heroImage || '');
         document.getElementById('cfgEmail').value = siteConfig?.contact?.email || '';
         document.getElementById('cfgContactMsg').value = siteConfig?.contact?.message || '';
+        document.getElementById('cfgCustomFonts').value = formatCustomFontsInput(siteConfig?.typography?.customFonts);
         if (siteConfig.social) {
             document.getElementById('cfgInstagram').value = siteConfig.social.instagram || '';
             document.getElementById('cfgFacebook').value = siteConfig.social.facebook || '';
@@ -2860,10 +3004,11 @@
         const data = {
             site: { name: document.getElementById('cfgSiteName').value, tagline: document.getElementById('cfgTagline').value, description: document.getElementById('cfgDescription').value, author: document.getElementById('cfgAuthor').value, heroImage: document.getElementById('cfgHeroImage').value },
             social: { instagram: document.getElementById('cfgInstagram').value, facebook: document.getElementById('cfgFacebook').value, youtube: document.getElementById('cfgYoutube').value, tiktok: document.getElementById('cfgTiktok').value, twitter: document.getElementById('cfgTwitter').value, pinterest: document.getElementById('cfgPinterest').value },
-            contact: { email: document.getElementById('cfgEmail').value, message: document.getElementById('cfgContactMsg').value }
+            contact: { email: document.getElementById('cfgEmail').value, message: document.getElementById('cfgContactMsg').value },
+            typography: { customFonts: parseCustomFontsInput(document.getElementById('cfgCustomFonts').value) }
         };
         try { const res = await apiFetch('/api/config', { method: 'PUT', body: JSON.stringify(data) });
-            if (res.ok) { showToast('Paramètres enregistrés !'); const r = await fetch('/api/config/public'); if (r.ok) siteConfig = await r.json(); renderHomePage(); } else showToast('Erreur');
+            if (res.ok) { showToast('Paramètres enregistrés !'); const r = await fetch('/api/config/public'); if (r.ok) siteConfig = await r.json(); applyCustomFontsFromConfig(); renderHomePage(); } else showToast('Erreur');
         } catch { showToast('Erreur réseau'); }
     }
     async function changePassword() {
@@ -2970,27 +3115,168 @@
         return { raw: line, qty, unit, name };
     }
 
+    const editorEmojiChoices = ['😀','😍','😋','🔥','✨','🌿','🍋','🥖','🧀','🍅','🌶️','🥂','🍽️','❤️','👏','🎉','☀️','🌴'];
+    const editorRaw = { editDescription: '', editSteps: '', articleEditContent: '' };
+    const defaultEditorFonts = [
+        { name: 'Par défaut', family: "'DM Sans', sans-serif" },
+        { name: 'DM Sans', family: "'DM Sans', sans-serif" },
+        { name: 'Playfair Display', family: "'Playfair Display', serif" },
+        { name: 'DM Mono', family: "'DM Mono', monospace" },
+        { name: 'Georgia', family: "Georgia, serif" },
+        { name: 'Times New Roman', family: "'Times New Roman', serif" },
+        { name: 'Arial', family: "Arial, sans-serif" },
+        { name: 'Helvetica', family: "Helvetica, sans-serif" },
+        { name: 'Courier New', family: "'Courier New', monospace" }
+    ];
+    function createMediaHtml(src,type) { const tag = type==='video'?`<video src="${src}" controls></video>`:`<img src="${src}">`; return `<span class="media-wrapper" contenteditable="false" draggable="true">${tag}<button class="media-delete" onmousedown="event.preventDefault();this.parentElement.remove();">x</button></span>`; }
+    function wrapMediaNodes(root) {
+        root.querySelectorAll('img').forEach(img => {
+            if (img.closest('.media-wrapper')) return;
+            img.replaceWith(buildMediaWrapper(img.getAttribute('src') || '', 'image'));
+        });
+        root.querySelectorAll('video').forEach(video => {
+            if (video.closest('.media-wrapper')) return;
+            video.replaceWith(buildMediaWrapper(video.getAttribute('src') || '', 'video'));
+        });
+    }
     function markdownToEditorHtml(md) {
         if (!md) return '';
-        let html = md.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        html = html.replace(/!\[.*?\]\((.*?)\)/g, (m,src) => createMediaHtml(src,'image'));
-        html = html.replace(/&lt;video src="(.*?)"(.*?)&gt;&lt;\/video&gt;/g, (m,src) => createMediaHtml(src,'video'));
-        return html.replace(/\n/g,'<br>');
+        const temp = document.createElement('div');
+        temp.innerHTML = window.renderRichText ? window.renderRichText(md, '') : String(md || '');
+        wrapMediaNodes(temp);
+        return temp.innerHTML;
     }
-    function createMediaHtml(src,type) { const tag = type==='video'?`<video src="${src}" controls></video>`:`<img src="${src}">`; return `<span class="media-wrapper" contenteditable="false" draggable="true">${tag}<button class="media-delete" onmousedown="event.preventDefault();this.parentElement.remove();">x</button></span>`; }
-    function editorHtmlToMarkdown(html) {
-        const temp = document.createElement('div'); temp.innerHTML = html;
-        function traverse(node) { if (node.nodeType===3) return node.textContent; if (node.nodeType!==1) return ''; if (node.classList?.contains('media-wrapper')) { const img=node.querySelector('img'),vid=node.querySelector('video'); if(img)return`\n![Image](${img.getAttribute('src')})\n`;if(vid)return`\n<video src="${vid.getAttribute('src')}" controls></video>\n`;return''; } if (node.tagName?.toLowerCase()==='br') return '\n'; return Array.from(node.childNodes).map(traverse).join(''); }
-        return Array.from(temp.childNodes).map(traverse).join('').replace(/\n{3,}/g,'\n\n').trim();
+    function storageToEditorHtml(value) {
+        if (!value) return '';
+        const temp = document.createElement('div');
+        temp.innerHTML = /<\/?[a-z][\s\S]*>/i.test(String(value)) ? (window.sanitizeRichHtml ? window.sanitizeRichHtml(value) : String(value)) : markdownToEditorHtml(value);
+        wrapMediaNodes(temp);
+        return temp.innerHTML;
     }
-    const editorRaw = { editSteps: '', articleEditContent: '' };
+    function editorHtmlToStorage(html) {
+        const temp = document.createElement('div');
+        temp.innerHTML = html || '';
+        temp.querySelectorAll('.media-delete').forEach(btn => btn.remove());
+        temp.querySelectorAll('.media-wrapper').forEach(wrapper => {
+            const media = wrapper.querySelector('img,video');
+            if (media) wrapper.replaceWith(media.cloneNode(true));
+            else wrapper.remove();
+        });
+        temp.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+        temp.querySelectorAll('[draggable]').forEach(el => el.removeAttribute('draggable'));
+        if (!temp.textContent.replace(/\u200B/g, '').trim() && !temp.querySelector('img,video')) return '';
+        return (window.sanitizeRichHtml ? window.sanitizeRichHtml(temp.innerHTML) : temp.innerHTML).trim();
+    }
+    function focusEditor(id) {
+        const ed = document.getElementById(id || 'editSteps');
+        if (!ed) return null;
+        ed.focus();
+        try { document.execCommand('styleWithCSS', false, true); } catch {}
+        return ed;
+    }
+    function applyEditorCommand(command, value, id) {
+        const ed = focusEditor(id);
+        if (!ed) return;
+        document.execCommand(command, false, value || null);
+        editorRaw[id || 'editSteps'] = editorHtmlToStorage(ed.innerHTML);
+    }
+    function applyEditorBlock(tag, id) {
+        const ed = focusEditor(id);
+        if (!ed) return;
+        document.execCommand('formatBlock', false, `<${tag || 'p'}>`);
+        editorRaw[id || 'editSteps'] = editorHtmlToStorage(ed.innerHTML);
+    }
+    function applyEditorFont(fontFamily, id) {
+        if (!fontFamily) return;
+        const ed = focusEditor(id);
+        if (!ed) return;
+        try { document.execCommand('fontName', false, fontFamily); } catch {}
+        document.querySelectorAll(`#${id || 'editSteps'} font`).forEach(node => {
+            node.style.fontFamily = fontFamily;
+            node.removeAttribute('face');
+        });
+        editorRaw[id || 'editSteps'] = editorHtmlToStorage(ed.innerHTML);
+    }
+    function applyEditorColor(color, id) {
+        if (!color) return;
+        const ed = focusEditor(id);
+        if (!ed) return;
+        try { document.execCommand('foreColor', false, color); } catch {}
+        editorRaw[id || 'editSteps'] = editorHtmlToStorage(ed.innerHTML);
+    }
+    function insertEditorText(text, id) {
+        const ed = focusEditor(id);
+        if (!ed) return;
+        document.execCommand('insertText', false, text || '');
+        editorRaw[id || 'editSteps'] = editorHtmlToStorage(ed.innerHTML);
+    }
+    function toggleEmojiMenu(event, id) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        const menu = document.getElementById('emojiMenu_' + id);
+        if (!menu) return;
+        const willShow = !menu.classList.contains('show');
+        document.querySelectorAll('.emoji-menu.show').forEach(el => el.classList.remove('show'));
+        if (willShow) menu.classList.add('show');
+    }
+    function insertEmoji(emoji, id) {
+        insertEditorText(emoji, id);
+        document.querySelectorAll('.emoji-menu.show').forEach(el => el.classList.remove('show'));
+    }
+    function initEmojiMenus() {
+        ['editDescription', 'editSteps', 'articleEditContent'].forEach(id => {
+            const menu = document.getElementById('emojiMenu_' + id);
+            if (!menu) return;
+            menu.innerHTML = editorEmojiChoices.map(emoji => `<button type="button" class="emoji-btn" onclick="insertEmoji('${emoji}', '${id}')">${emoji}</button>`).join('');
+        });
+    }
+    function normalizeCustomFonts(fonts) {
+        return (Array.isArray(fonts) ? fonts : []).map(font => ({
+            name: String(font?.name || '').trim(),
+            url: String(font?.url || '').trim(),
+            family: String(font?.family || '').trim()
+        })).filter(font => font.name && font.url && font.family);
+    }
+    function parseCustomFontsInput(value) {
+        return String(value || '').split('\n').map(line => line.trim()).filter(Boolean).map(line => {
+            const parts = line.split('|').map(part => part.trim());
+            return { name: parts[0] || '', url: parts[1] || '', family: parts.slice(2).join(' | ') || '' };
+        }).filter(font => font.name && font.url && font.family);
+    }
+    function formatCustomFontsInput(fonts) {
+        return normalizeCustomFonts(fonts).map(font => `${font.name} | ${font.url} | ${font.family}`).join('\n');
+    }
+    function getEditorFontOptions() {
+        const customFonts = normalizeCustomFonts(siteConfig?.typography?.customFonts);
+        return [...defaultEditorFonts, ...customFonts];
+    }
+    function refreshEditorFontOptions() {
+        const options = getEditorFontOptions();
+        document.querySelectorAll('.editor-font-select').forEach(select => {
+            const placeholder = '<option value="">Police</option>';
+            select.innerHTML = placeholder + options.map(font => `<option value="${escapeHtml(font.family)}">${escapeHtml(font.name)}</option>`).join('');
+        });
+    }
+    function applyCustomFontsFromConfig() {
+        document.querySelectorAll('link[data-custom-font="true"]').forEach(link => link.remove());
+        normalizeCustomFonts(siteConfig?.typography?.customFonts).forEach(font => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = font.url;
+            link.setAttribute('data-custom-font', 'true');
+            document.head.appendChild(link);
+        });
+        refreshEditorFontOptions();
+    }
     function getEditorFolder(id) {
         if (id === 'articleEditContent') {
             const t = document.getElementById('articleEditTitle').value || 'Untitled';
             return 'articles/' + t.trim().replace(/[^a-z0-9\-_]/gi, '_') + '/content_media';
         }
         const t = document.getElementById('editTitle').value || 'Untitled';
-        return t.trim().replace(/[^a-z0-9\-_]/gi, '_') + '/steps_media';
+        return t.trim().replace(/[^a-z0-9\-_]/gi, '_') + (id === 'editDescription' ? '/description_media' : '/steps_media');
     }
     function buildMediaWrapper(src, type) {
         const wrapper = document.createElement('span');
@@ -3004,9 +3290,9 @@
         wrapper.appendChild(el); wrapper.appendChild(del);
         return wrapper;
     }
-    function handleEditorFocus(id) { id = id || 'editSteps'; const e = document.getElementById(id); if (!e) return; if (e.classList.contains('preview-mode')) { e.innerHTML = markdownToEditorHtml(editorRaw[id] || ''); e.classList.remove('preview-mode'); } }
-    function handleEditorBlur(id) { id = id || 'editSteps'; const e = document.getElementById(id); if (!e) return; const raw = editorHtmlToMarkdown(e.innerHTML); editorRaw[id] = raw; e.innerHTML = (typeof marked !== 'undefined') ? marked.parse(raw) : raw; e.classList.add('preview-mode'); if (id === 'editSteps') currentRawMarkdown = raw; }
-    function insertMarkdown(prefix, suffix, id) { id = id || 'editSteps'; const e = document.getElementById(id); if (!e) return; e.focus(); const s = window.getSelection(); if (s.rangeCount > 0) { const r = s.getRangeAt(0); if (e.contains(r.commonAncestorContainer)) document.execCommand('insertText', false, prefix + r.toString() + suffix); } }
+    function handleEditorFocus(id) { id = id || 'editSteps'; const e = document.getElementById(id); if (!e) return; editorRaw[id] = editorHtmlToStorage(e.innerHTML); }
+    function handleEditorBlur(id) { id = id || 'editSteps'; const e = document.getElementById(id); if (!e) return; editorRaw[id] = editorHtmlToStorage(e.innerHTML); if (id === 'editSteps') currentRawMarkdown = editorRaw[id]; }
+    function insertMarkdown(prefix, suffix, id) { insertEditorText(`${prefix || ''}${suffix || ''}`, id || 'editSteps'); }
     function handleMediaDragOver(e) { if (draggedMediaElement) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } }
     function handleMediaDrop(e, id) { if (!draggedMediaElement) return; e.preventDefault(); const ed = document.getElementById(id || 'editSteps'); if (!ed) return; let r = document.caretRangeFromPoint ? document.caretRangeFromPoint(e.clientX, e.clientY) : null; if (r && ed.contains(r.commonAncestorContainer)) { r.insertNode(draggedMediaElement); r.setStartAfter(draggedMediaElement); r.collapse(true); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); } draggedMediaElement = null; }
     async function handleStepMediaInput(input, id) {
@@ -3054,6 +3340,7 @@
             }
         });
     }
+    bindEditorPaste('editDescription');
     bindEditorPaste('editSteps');
     bindEditorPaste('articleEditContent');
 
@@ -3080,7 +3367,12 @@
     function closeMobileNav() { document.getElementById('mobileNav').classList.remove('show'); }
 
     window.addEventListener('scroll', () => { document.getElementById('scrollTopBtn').style.display = window.scrollY > 300 ? 'flex' : 'none'; });
-    document.addEventListener('click', e => { const nav=document.getElementById('mobileNav');const btn=document.getElementById('hamburgerBtn'); if(nav.classList.contains('show')&&!nav.contains(e.target)&&!btn.contains(e.target))nav.classList.remove('show'); });
+    document.addEventListener('click', e => {
+        const nav = document.getElementById('mobileNav');
+        const btn = document.getElementById('hamburgerBtn');
+        if (nav.classList.contains('show') && !nav.contains(e.target) && !btn.contains(e.target)) nav.classList.remove('show');
+        if (!e.target.closest('.toolbar-dropdown')) document.querySelectorAll('.emoji-menu.show').forEach(menu => menu.classList.remove('show'));
+    });
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             if (document.getElementById('lightboxOverlay').classList.contains('active')) closeLightbox(null);
@@ -3101,6 +3393,8 @@
        INIT
        ======================================== */
     window.onload = async function() {
+        initEmojiMenus();
+        refreshEditorFontOptions();
         if (typeof marked !== 'undefined') marked.setOptions({ breaks: true });
         const savedView = (() => { try { return localStorage.getItem('ladiosa_view'); } catch { return null; } })();
         if (savedView && ['card', 'list', 'big-grid'].includes(savedView)) applyView(savedView);
