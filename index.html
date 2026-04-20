@@ -506,6 +506,19 @@
         .ingredient-list { list-style:none; margin-top:10px; }
         .ingredient-item { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--border-color); font-size:.95rem; }
         .ing-qty { color:var(--teal); font-family:var(--code-font); font-weight:bold; }
+        .recipe-section { margin-bottom:24px; }
+        .recipe-section-title {
+            font-family:var(--cyber-font);
+            color:var(--forest);
+            font-size:1.35rem;
+            margin-bottom:10px;
+        }
+        .recipe-description {
+            color:var(--muted-text);
+            line-height:1.75;
+            font-size:1rem;
+        }
+        .recipe-description p { margin-bottom:.9rem; }
         .servings-control {
             display:flex; align-items:center; gap:10px; background:var(--bg-color);
             padding:5px 10px; border-radius:20px; width:fit-content; margin-bottom:10px; border:1px solid var(--border-color);
@@ -921,12 +934,114 @@
             .admin-stats { grid-template-columns:1fr 1fr; }
         }
         @media print {
-            @page { margin:.5cm; }
+            @page { size: A4 portrait; margin: 12mm; }
+            html, body {
+                background:#fff !important;
+                overflow:visible !important;
+            }
             body * { visibility:hidden; }
-            #recipeModalWrapper,#recipeModalWrapper * { visibility:visible; }
-            #recipeModalWrapper { position:absolute; left:0; top:0; width:100%; }
-            .recipe-modal { background:#fff!important; border:none!important; box-shadow:none!important; width:100%!important; max-width:100%!important; }
-            .modal-header button,.modal-header .cyber-btn { display:none!important; }
+            #recipeModalWrapper, #recipeModalWrapper * { visibility:visible; }
+            #recipeModalWrapper {
+                position:static !important;
+                display:block !important;
+                width:100% !important;
+                height:auto !important;
+                background:#fff !important;
+                padding:0 !important;
+                opacity:1 !important;
+            }
+            #recipeModalWrapper .recipe-modal {
+                transform:none !important;
+                margin:0 !important;
+                width:100% !important;
+                max-width:none !important;
+                height:auto !important;
+                max-height:none !important;
+                overflow:visible !important;
+                border:none !important;
+                border-radius:0 !important;
+                box-shadow:none !important;
+            }
+            #recipeModalWrapper .modal-header {
+                padding:0 0 8mm 0 !important;
+                background:#fff !important;
+                border-bottom:1px solid #d8d8d8 !important;
+            }
+            #recipeModalWrapper .modal-header button,
+            #recipeModalWrapper .modal-header .cyber-btn,
+            #recipeModalWrapper .gallery-thumbs,
+            #recipeModalWrapper .share-btns,
+            #recipeModalWrapper .recipe-videos {
+                display:none !important;
+            }
+            #recipeModalWrapper .servings-control {
+                display:inline-flex !important;
+                padding:0 !important;
+                margin:0 0 4mm 0 !important;
+                border:none !important;
+                background:transparent !important;
+                border-radius:0 !important;
+                gap:3mm !important;
+            }
+            #recipeModalWrapper .servings-btn {
+                display:none !important;
+            }
+            #recipeModalWrapper .modal-body,
+            #recipeModalWrapper .modal-content-grid,
+            #recipeModalWrapper .modal-sidebar,
+            #recipeModalWrapper .modal-main {
+                display:block !important;
+                overflow:visible !important;
+                height:auto !important;
+                min-height:0 !important;
+            }
+            #recipeModalWrapper .modal-content-grid {
+                min-height:0 !important;
+            }
+            #recipeModalWrapper .modal-sidebar,
+            #recipeModalWrapper .modal-main {
+                padding:0 !important;
+                border:none !important;
+                background:#fff !important;
+            }
+            #recipeModalWrapper .gallery-container {
+                aspect-ratio:auto !important;
+                margin:8mm 0 6mm 0 !important;
+                page-break-inside:avoid;
+                break-inside:avoid;
+            }
+            #recipeModalWrapper .main-photo {
+                width:100% !important;
+                max-height:115mm !important;
+                object-fit:cover !important;
+                border-radius:10px !important;
+            }
+            #recipeModalWrapper .recipe-section,
+            #recipeModalWrapper .ingredient-list,
+            #recipeModalWrapper .instructions-content,
+            #recipeModalWrapper .instructions-content p,
+            #recipeModalWrapper .instructions-content ol,
+            #recipeModalWrapper .instructions-content ul,
+            #recipeModalWrapper .ingredient-item {
+                page-break-inside:avoid;
+                break-inside:avoid;
+            }
+            #recipeModalWrapper .recipe-section-title {
+                margin:0 0 4mm 0 !important;
+                font-size:14pt !important;
+            }
+            #recipeModalWrapper .recipe-description,
+            #recipeModalWrapper .instructions-content,
+            #recipeModalWrapper .ingredient-item,
+            #recipeModalWrapper .modal-main > div {
+                font-size:10.5pt !important;
+                line-height:1.5 !important;
+            }
+            #recipeModalWrapper .instructions-content img,
+            #recipeModalWrapper .instructions-content video {
+                max-height:65mm !important;
+                break-inside:avoid;
+            }
             .main-nav,.page,.toast,#scrollTopBtn { display:none!important; }
         }
     </style>
@@ -1234,6 +1349,10 @@
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                                 <div class="form-group"><label class="form-label">PORTIONS</label><input type="number" id="editServings" class="cyber-input" value="4"></div>
                                 <div class="form-group"><label class="form-label">STATUT</label><select id="editStatus" class="cyber-input"><option value="draft">Brouillon</option><option value="published">Publié</option></select></div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">DESCRIPTION</label>
+                                <textarea id="editDescription" class="cyber-input" rows="4" style="resize:vertical;" placeholder="Petit texte d'introduction, notes, contexte de la recette..."></textarea>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">TAGS</label>
@@ -1754,7 +1873,10 @@
         const admin = isLoggedIn();
         let filtered = recipes.filter(r => {
             if (!admin && r.status === 'draft') return false;
-            const ms = r.title.toLowerCase().includes(searchTerm) || (r.tags || []).some(t => t.toLowerCase().includes(searchTerm)) || (r.ingredients || []).some(i => (i.name || '').toLowerCase().includes(searchTerm));
+            const ms = r.title.toLowerCase().includes(searchTerm)
+                || (r.description || '').toLowerCase().includes(searchTerm)
+                || (r.tags || []).some(t => t.toLowerCase().includes(searchTerm))
+                || (r.ingredients || []).some(i => (i.name || '').toLowerCase().includes(searchTerm));
             let mt = true;
             if (currentTagFilter === 'favorites') mt = r.favorite === true;
             else if (currentTagFilter === 'drafts') mt = r.status === 'draft';
@@ -1910,6 +2032,9 @@
             let dq = ing.qty ? Math.round((ing.qty * currentMultiplier) * 100) / 100 : '';
             return `<li class="ingredient-item"><span>${escapeHtml(ing.name)}</span><span class="ing-qty">${dq} ${escapeHtml(ing.unit || '')}</span></li>`;
         }).join('');
+        const descriptionHtml = (r.description || '').trim()
+            ? (window.renderMarkdown ? window.renderMarkdown(r.description) : `<p>${escapeHtml(r.description).replace(/\n/g, '<br>')}</p>`)
+            : '';
         const stepsHtml = window.renderMarkdown ? window.renderMarkdown(r.steps || '*Pas d\'instructions.*') : '';
         let videosHtml = '';
         if (r.videos?.length > 0) {
@@ -1948,7 +2073,11 @@
                     <span><i class="fas fa-clock"></i> Prépa: ${escapeHtml(r.prepTime || 'N/A')}</span>
                     <span><i class="fas fa-fire"></i> Cuisson: ${escapeHtml(r.cookTime || 'N/A')}</span>
                 </div>
-                <div class="instructions-content">${stepsHtml}</div>
+                ${descriptionHtml ? `<div class="recipe-section"><h3 class="recipe-section-title">Description</h3><div class="recipe-description">${descriptionHtml}</div></div>` : ''}
+                <div class="recipe-section">
+                    <h3 class="recipe-section-title">Instructions</h3>
+                    <div class="instructions-content">${stepsHtml}</div>
+                </div>
                 ${videosHtml}
             </div>
         </div>`;
@@ -1989,6 +2118,7 @@
             document.getElementById('editCook').value = recipe.cookTime || '';
             document.getElementById('editServings').value = recipe.servings || 4;
             document.getElementById('editStatus').value = recipe.status === 'draft' ? 'draft' : 'published';
+            document.getElementById('editDescription').value = recipe.description || '';
             document.getElementById('editTags').value = (recipe.tags || []).join(', ');
             document.getElementById('editIngredients').value = (recipe.ingredients || []).map(i => i.raw).join('\n');
             document.getElementById('editVideos').value = (recipe.videos || []).join('\n');
@@ -2002,6 +2132,7 @@
             document.getElementById('recipeForm').reset(); document.getElementById('editId').value = '';
             document.getElementById('editImagesList').innerHTML = ''; document.getElementById('editVideos').value = '';
             document.getElementById('editStatus').value = 'draft';
+            document.getElementById('editDescription').value = '';
             editor.innerHTML = ''; initialEditSteps = ''; initialEditTitle = ''; currentRawMarkdown = ''; editorRaw.editSteps = '';
         }
         document.getElementById('editModalWrapper').classList.add('active'); document.body.classList.add('modal-open');
@@ -2033,6 +2164,7 @@
         e.preventDefault();
         const id = document.getElementById('editId').value || crypto.randomUUID();
         const title = document.getElementById('editTitle').value;
+        const description = document.getElementById('editDescription').value.trim();
         const tags = document.getElementById('editTags').value.split(',').map(t => t.trim()).filter(t => t);
         const ingredients = document.getElementById('editIngredients').value.split('\n').filter(l => l.trim()).map(parseIngredient);
         const videos = document.getElementById('editVideos').value.split('\n').map(v => v.trim()).filter(v => v);
@@ -2055,6 +2187,7 @@
         const newRecipe = {
             id, title, prepTime: document.getElementById('editPrep').value, cookTime: document.getElementById('editCook').value,
             servings: parseFloat(document.getElementById('editServings').value) || 4,
+            description,
             tags, ingredients, steps, images, videos, favorite: existing ? !!existing.favorite : false,
             status,
             createdAt: existing ? (existing.createdAt || Date.now()) : Date.now(), updatedAt: Date.now()
@@ -2808,7 +2941,7 @@
         if (p.id && p.title && !p.uid) return p;
         let imgs = []; if (p.photo_data) imgs.push('data:image/jpeg;base64,' + p.photo_data); else if (p.image_url) imgs.push(p.image_url);
         let ings = typeof p.ingredients === 'string' ? p.ingredients.split('\n').filter(l => l.trim()).map(parseIngredient) : [];
-        return { id: p.uid || crypto.randomUUID(), title: p.name || 'Sans titre', prepTime: p.prep_time || '', cookTime: p.cook_time || '', servings: parseInt(p.servings) || 4, tags: p.categories || [], images: imgs, ingredients: ings, steps: p.directions || '', videos: [], createdAt: p.created ? new Date(p.created).getTime() : Date.now() };
+        return { id: p.uid || crypto.randomUUID(), title: p.name || 'Sans titre', prepTime: p.prep_time || '', cookTime: p.cook_time || '', servings: parseInt(p.servings) || 4, description: p.description || p.notes || '', tags: p.categories || [], images: imgs, ingredients: ings, steps: p.directions || '', videos: [], createdAt: p.created ? new Date(p.created).getTime() : Date.now() };
     }
     async function importFromUrl() {
         const url = prompt('URL de la recette :'); if (!url) return; showToast('Import en cours...');
@@ -2816,7 +2949,7 @@
             const res = await apiFetch('/api/import-recipe', { method: 'POST', body: JSON.stringify({ url }) });
             if (!res.ok) throw new Error((await res.json()).error || 'Erreur');
             const data = await res.json();
-            openEditModal({ id: crypto.randomUUID(), title: data.title, prepTime: data.prepTime, cookTime: data.cookTime, servings: data.servings, tags: [], ingredients: data.ingredients.map(parseIngredient), steps: data.instructions, images: data.imageUrl ? [data.imageUrl] : [], videos: [], createdAt: Date.now() });
+            openEditModal({ id: crypto.randomUUID(), title: data.title, prepTime: data.prepTime, cookTime: data.cookTime, servings: data.servings, description: data.description || '', tags: [], ingredients: data.ingredients.map(parseIngredient), steps: data.instructions, images: data.imageUrl ? [data.imageUrl] : [], videos: [], createdAt: Date.now() });
             showToast('Recette importée — vérifiez et enregistrez.');
         } catch (e) { showToast('Import échoué: ' + e.message); }
     }
