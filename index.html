@@ -640,14 +640,25 @@
         .form-group { display:flex; flex-direction:column; gap:5px; }
         .form-label { color:var(--neon-blue); font-size:.8rem; font-family:var(--ui-font); font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
         .form-textarea { min-height:150px; resize:vertical; }
-        .edit-layout-container { display:flex; flex-direction:column; height:100%; overflow:hidden; }
+        .edit-layout-container { display:flex; flex-direction:column; height:100%; min-height:0; overflow:hidden; }
         .edit-header { padding:15px 20px; border-bottom:1px solid var(--border-color); flex-shrink:0; }
-        .edit-main-grid { display:flex; flex:1; overflow:hidden; }
+        .edit-main-grid { display:flex; flex:1; min-height:0; overflow:hidden; }
         .edit-sidebar {
             width:320px; background:var(--bg-color); border-right:1px solid var(--border-color);
-            padding:20px; overflow-y:auto; flex-shrink:0; display:flex; flex-direction:column; gap:15px;
+            padding:20px; overflow-y:auto; flex-shrink:0; display:flex; flex-direction:column; gap:15px; min-height:0;
         }
-        .edit-workspace { flex:1; display:flex; flex-direction:column; padding:20px; overflow:hidden; min-width:0; }
+        .edit-workspace { flex:1; display:flex; flex-direction:column; padding:20px; overflow:hidden; min-width:0; min-height:0; }
+        .edit-footer {
+            display:flex;
+            justify-content:flex-end;
+            align-items:center;
+            gap:10px;
+            padding:10px 15px calc(10px + env(safe-area-inset-bottom));
+            text-align:right;
+            border-top:1px solid var(--border-color);
+            background:#fff;
+            flex-shrink:0;
+        }
         .editor-toolbar {
             display:flex; gap:5px; margin-bottom:10px; padding-bottom:10px;
             border-bottom:1px dashed var(--border-color); flex-wrap:wrap;
@@ -871,6 +882,18 @@
             .edit-main-grid { position:relative; }
             .edit-sidebar,.edit-workspace { width:100%; display:none; border-right:none; }
             .edit-sidebar.active-tab,.edit-workspace.active-tab { display:flex; }
+            .edit-footer {
+                position:sticky;
+                bottom:0;
+                z-index:5;
+                padding-bottom:calc(12px + env(safe-area-inset-bottom));
+                box-shadow:0 -8px 20px rgba(38,70,83,0.08);
+            }
+            .edit-footer .cyber-btn {
+                flex:1 1 0;
+                justify-content:center;
+                margin-left:0 !important;
+            }
             .admin-stats { grid-template-columns:repeat(2,1fr); }
             .admin-table { font-size:.8rem; }
             .admin-table th,.admin-table td { padding:6px 8px; }
@@ -1250,7 +1273,7 @@
                             <div id="editSteps" class="rich-editor scrollable" contenteditable="true" onfocus="handleEditorFocus()" onblur="handleEditorBlur()" ondragover="handleMediaDragOver(event)" ondrop="handleMediaDrop(event)"></div>
                         </div>
                     </div>
-                    <div style="padding:10px 15px;text-align:right;border-top:1px solid var(--border-color);flex-shrink:0;">
+                    <div class="edit-footer">
                         <button type="submit" class="cyber-btn action" style="padding:10px 30px;font-size:1rem;">ENREGISTRER</button>
                         <button type="button" id="publishRecipeBtn" class="cyber-btn" style="padding:10px 18px;font-size:1rem;margin-left:10px;" onclick="toggleEditRecipePublish()">
                             <i class="fas fa-globe" id="publishRecipeIcon"></i> <span id="publishRecipeLabel">PUBLIER</span>
@@ -1327,7 +1350,7 @@
                             <div id="articleEditContent" class="rich-editor scrollable" contenteditable="true" onfocus="handleEditorFocus('articleEditContent')" onblur="handleEditorBlur('articleEditContent')" ondragover="handleMediaDragOver(event)" ondrop="handleMediaDrop(event,'articleEditContent')"></div>
                         </div>
                     </div>
-                    <div style="padding:10px 15px;text-align:right;border-top:1px solid var(--border-color);flex-shrink:0;">
+                    <div class="edit-footer">
                         <button type="button" class="cyber-btn action" style="padding:10px 30px;font-size:1rem;" onclick="saveArticle()">ENREGISTRER</button>
                     </div>
                 </div>
