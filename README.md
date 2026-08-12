@@ -1,3 +1,5 @@
+<img width="500" height="500" alt="image-removebg-preview (17)" src="https://github.com/user-attachments/assets/19b6ff5a-965f-43a4-8ca9-03ab8e60cc6e" />
+
 # La Diosa
 
 ![Node](https://img.shields.io/badge/Node.js-339933?style=flat&logo=node.js&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white) [![Release](https://img.shields.io/github/v/release/infinition/ladiosa?style=flat)](https://github.com/infinition/ladiosa/releases)
