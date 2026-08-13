@@ -1,4 +1,4 @@
-<img width="500" height="500" alt="image-removebg-preview (17)" src="https://github.com/user-attachments/assets/19b6ff5a-965f-43a4-8ca9-03ab8e60cc6e" />
+<img width="352" height="345" alt="dioqa" src="https://github.com/user-attachments/assets/bb8cd0c6-4481-481b-bda1-0e19e9ec50a0" />
 
 # La Diosa
 
